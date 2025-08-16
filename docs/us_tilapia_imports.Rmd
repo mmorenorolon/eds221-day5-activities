@@ -24,39 +24,52 @@ skimr::skim(us_tilapia_imports)
 Use pivot_longer() to reshape the data into long format (currently, the variable “year” is spread across multiple columns).
 ```{r}
 df <- us_tilapia_imports %>% 
-  pivot_longer(cols = !country, names_to = "year", values_to = "imports")
+  pivot_longer(cols = '1992':'2018', names_to = "year", values_to = "imports")
 
 df
 ```
 
 Check the class of the year column. What is it, and why do you think that’s the case? Then, coerce the year column to numeric (e.g. using mutate() and as.numeric() in combination)
 ```{r}
-class(df$year)
+class(year)
 
-df_numeric <- imports_df %>% mutate(imports_df$year = as.numeric(year))
-class(df_numeric$year)
+df <- df %>% mutate(year = as.numeric(df$year))
+class(df$year)
 ```
 
 find the total US tilapia imports by year
 ```{r}
-yearly_tilapia_tot <- dplyr::group_by(df_numeric$year) %>% 
-  summarize(total_imports = sum(df_numeric$imports), na.rm = TRUE)
+yearly_tilapia_tot <-  df %>% dplyr::group_by(year) %>% 
+  summarize(total_imports = sum(imports, na.rm = TRUE))
+yearly_tilapia_tot
 ```
 
 Create a ggplot line graph of total US tilapia imports for all years
 ```{r}
-ggplot(data = yearly_tilapia_tot, aes(x = year, y = imports)) +
-  geom_line(aes(color = "blue")) +
-  scale_y_log10()
+ggplot(data = yearly_tilapia_tot, aes(x = year, y = total_imports)) +
+  geom_line(aes(color = "blue"), show.legend = FALSE) +
+  labs(title = "Total Imports in the United States by Year",
+       x = "time (years)",
+       y = "total volume (lbs)")
+
+ggsave(here::here("figs", "yearly_tilapia_tot.png"), height = 5, width = 6)
 ```
 
 Create a subset that only retains imports from Ecuador, Honduras, Costa Rica, and Mexico
 ```{r}
-
+lat_imports <- subset(df, country == c("Ecuador", "Honduras", "Costa Rica", "Mexico"))
+lat_imports
 ```
 
 Create a ggplot graph of total US tilapia imports over time, for those four countries in the subset you created above, separated by country. Update axis labels, add a title, customize your color scheme, update the theme. Export a .jpg of your graph. 
 ```{r}
+ggplot(lat_imports, aes(x = year, y = imports, color = country)) +
+  geom_line(aes(colour = country), size = 0.5, alpha = 1, show.legend = TRUE) +
+  labs(title = "US Tilapia Imports Over Time by Country",
+       x = "time (years)",
+       y = "total volume (lbs)") + 
+  theme_minimal()
 
+ggsave(here::here("figs", "lat_imports.png"), height = 5, width = 6)
 ```
 
