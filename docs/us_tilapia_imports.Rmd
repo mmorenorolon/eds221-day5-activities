@@ -3,14 +3,19 @@ title: "us_tilapia_imports"
 output: html_document
 ---
 
+Wild Data
+
 ```{r}
 library(tidyverse)
 library(here)
 library(janitor)
+library(ggplot2)
 ```
 
+Read in the data as us_tilapia_imports. 
 ```{r}
 us_tilapia_imports <- read_csv(here::here("data","us_tilapia_imports.csv"))
+
 View(us_tilapia_imports)
 ```
 
@@ -19,35 +24,36 @@ summary(us_tilapia_imports)
 names(us_tilapia_imports)
 dim(us_tilapia_imports)
 skimr::skim(us_tilapia_imports)
+class(us_tilapia_imports$country)
+class(us_tilapia_imports$`1992`)
 ```
 
-Use pivot_longer() to reshape the data into long format (currently, the variable “year” is spread across multiple columns).
+Use pivot_longer() to reshape the data into long format (currently, the variable
+“year” is spread across multiple columns).
 ```{r}
-df <- us_tilapia_imports %>% 
-  pivot_longer(cols = '1992':'2018', names_to = "year", values_to = "imports")
+us_tilapia_imports_long <- us_tilapia_imports |> 
+  pivot_longer(cols = '1992':'2018', 
+               names_to = "year", 
+               values_to = "annual_imports") |> 
+  mutate(year = as.numeric(year)) 
 
-df
-```
-
-Check the class of the year column. What is it, and why do you think that’s the case? Then, coerce the year column to numeric (e.g. using mutate() and as.numeric() in combination)
-```{r}
-class(year)
-
-df <- df %>% mutate(year = as.numeric(df$year))
-class(df$year)
+View(us_tilapia_imports_long)
+class(us_tilapia_imports_long$year)
 ```
 
 find the total US tilapia imports by year
 ```{r}
-yearly_tilapia_tot <-  df %>% dplyr::group_by(year) %>% 
-  summarize(total_imports = sum(imports, na.rm = TRUE))
-yearly_tilapia_tot
+yearly_tilapia_tot <- us_tilapia_imports_long %>% dplyr::group_by(year) %>% 
+  summarize(total_imports = sum(annual_imports, na.rm = TRUE))
+
+View(yearly_tilapia_tot)
 ```
 
 Create a ggplot line graph of total US tilapia imports for all years
 ```{r}
-ggplot(data = yearly_tilapia_tot, aes(x = year, y = total_imports)) +
-  geom_line(aes(color = "blue"), show.legend = FALSE) +
+ggplot(data = yearly_tilapia_tot, aes(x = year, 
+                                      y = total_imports)) +
+  geom_line() +
   labs(title = "Total Imports in the United States by Year",
        x = "time (years)",
        y = "total volume (lbs)")
@@ -55,21 +61,23 @@ ggplot(data = yearly_tilapia_tot, aes(x = year, y = total_imports)) +
 ggsave(here::here("figs", "yearly_tilapia_tot.png"), height = 5, width = 6)
 ```
 
-Create a subset that only retains imports from Ecuador, Honduras, Costa Rica, and Mexico
+Create a subset that only retains imports from Ecuador, Honduras, Costa Rica, and Mexico. 
 ```{r}
-lat_imports <- subset(df, country == c("Ecuador", "Honduras", "Costa Rica", "Mexico"))
-lat_imports
+lat_tilapia_imports <- us_tilapia_imports_long |> 
+  filter(country %in% c("Ecuador", "Honduras", "Costa Rica", "Mexico"))
+
+View(lat_tilapia_imports)
 ```
 
-Create a ggplot graph of total US tilapia imports over time, for those four countries in the subset you created above, separated by country. Update axis labels, add a title, customize your color scheme, update the theme. Export a .jpg of your graph. 
+Create a ggplot graph of total US tilapia imports over time, for those four countries in the subset you created above, separated by country. Update axis labels, add a title, customize your color scheme, update the theme.
 ```{r}
-ggplot(lat_imports, aes(x = year, y = imports, color = country)) +
-  geom_line(aes(colour = country), size = 0.5, alpha = 1, show.legend = TRUE) +
-  labs(title = "US Tilapia Imports Over Time by Country",
+ggplot(data = lat_tilapia_imports, 
+       aes(x = year, y = annual_imports)) +
+  geom_line(aes(color = country)) + labs(title = "US Tilapia Imports Over Time by Country",
        x = "time (years)",
        y = "total volume (lbs)") + 
   theme_minimal()
 
-ggsave(here::here("figs", "lat_imports.png"), height = 5, width = 6)
+ggsave(here::here("figs", "lat_tilapia_imports.png"), height = 5, width = 6)
 ```
 
